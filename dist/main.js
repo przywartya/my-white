@@ -10659,6 +10659,303 @@ module.exports = __webpack_require__(/*! ./modules/_core */ "./node_modules/core
 
 /***/ }),
 
+/***/ "./node_modules/custom-event-polyfill/custom-event-polyfill.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/custom-event-polyfill/custom-event-polyfill.js ***!
+  \*********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+// Polyfill for creating CustomEvents on IE9/10/11
+
+// code pulled from:
+// https://github.com/d4tocchini/customevent-polyfill
+// https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent#Polyfill
+
+try {
+    var ce = new window.CustomEvent('test');
+    ce.preventDefault();
+    if (ce.defaultPrevented !== true) {
+        // IE has problems with .preventDefault() on custom events
+        // http://stackoverflow.com/questions/23349191
+        throw new Error('Could not prevent default');
+    }
+} catch(e) {
+  var CustomEvent = function(event, params) {
+    var evt, origPrevent;
+    params = params || {
+      bubbles: false,
+      cancelable: false,
+      detail: undefined
+    };
+
+    evt = document.createEvent("CustomEvent");
+    evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+    origPrevent = evt.preventDefault;
+    evt.preventDefault = function () {
+      origPrevent.call(this);
+      try {
+        Object.defineProperty(this, 'defaultPrevented', {
+          get: function () {
+            return true;
+          }
+        });
+      } catch(e) {
+        this.defaultPrevented = true;
+      }
+    };
+    return evt;
+  };
+
+  CustomEvent.prototype = window.Event.prototype;
+  window.CustomEvent = CustomEvent; // expose definition to window
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/es6-router/lib/index.js":
+/*!**********************************************!*\
+  !*** ./node_modules/es6-router/lib/index.js ***!
+  \**********************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Router; });
+/* harmony import */ var custom_event_polyfill__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! custom-event-polyfill */ "./node_modules/custom-event-polyfill/custom-event-polyfill.js");
+/* harmony import */ var custom_event_polyfill__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(custom_event_polyfill__WEBPACK_IMPORTED_MODULE_0__);
+
+
+const log = message => {
+  console.log(
+    `%c[Router]%c ${message}`,
+    'color: rgb(255, 105, 100);',
+    'color: inherit'
+  );
+};
+
+/**
+ * Client side router with hash history
+ */
+class Router {
+  /**
+   * Create a new instance of a client side router
+   * @param {Object} options Router options
+   * @param {boolean} [options.debug=false] - Enable debugging console messages
+   * @param {Object} [options.context=window] - Context to listen for changes on
+   * @param {boolean} [options.startListening=true] - Initiate listen on construct
+   */
+  constructor(options) {
+    this.options = Object.assign(
+      {
+        debug: false,
+        context: window,
+        startListening: true
+      },
+      options
+    );
+
+    this.isListening = false;
+    this.routes = [];
+    this.onHashChange = this.check.bind(this);
+
+    if (this.options.startListening) {
+      this.listen();
+    }
+  }
+
+  /**
+   * Add a new route
+   * @param {string|RegExp|function} route - Name of route to match or global function
+   * @param {function=} handler - Method to execute when route matches
+   * @returns {Router} - This router instance
+   */
+  add(route, handler) {
+    let newRoute = typeof route === 'string' ? Router.cleanPath(route) : route;
+
+    if (typeof route === 'function') {
+      handler = route;
+      newRoute = '';
+    }
+
+    newRoute = new RegExp(newRoute);
+
+    this.routes.push({
+      route: newRoute,
+      handler
+    });
+
+    return this;
+  }
+
+  /**
+   * Remove a route from the router
+   * @param {string|RegExp} route - Name of route to remove
+   * @param {function} [handler] - Function handler to remove
+   * @returns {Router} - This router instance
+   */
+  remove(route, handler) {
+    const routeName = String(new RegExp(route));
+
+    this.routes = this.routes.filter(
+      activeRoute =>
+        String(new RegExp(activeRoute.route)) !== routeName ||
+        (handler ? activeRoute.handler !== handler : false)
+    );
+
+    return this;
+  }
+
+  /**
+   * Reload the current route
+   * @returns {Router} - This router instance
+   */
+  reload() {
+    return this.check();
+  }
+
+  /**
+   * Recheck the path and reload the page
+   * @private
+   * @returns {Router} - This router instance
+   */
+  check() {
+    const hash = this.currentRoute;
+    let hasMatch = false;
+
+    for (let route of this.routes) {
+      const match = hash.match(route.route);
+
+      if (match !== null) {
+        match.shift();
+        route.handler.apply({}, match);
+        hasMatch = true;
+
+        if (this.options.debug) {
+          log(`Fetching: /${hash}`);
+        }
+      }
+    }
+
+    if (!hasMatch) {
+      this.navigateError(hash);
+    }
+
+    return this;
+  }
+
+  /**
+   * Start listening for hash changes on the context
+   * @param {any} [instance=Window] - Context to start listening on
+   * @returns {Router} - This router instance
+   */
+  listen(instance) {
+    this.check();
+
+    if (!this.isListening || instance) {
+      (instance || this.options.context).addEventListener(
+        'hashchange',
+        this.onHashChange
+      );
+
+      this.isListening = true;
+    }
+
+    return this;
+  }
+
+  /**
+   * Stop listening for hash changes on the context
+   * @param {any} [instance=Window] - Context to stop listening on
+   * @returns {Router} - This router instance
+   */
+  stopListen(instance) {
+    if (this.isListening || instance) {
+      (instance || this.options.context).removeEventListener(
+        'hashchange',
+        this.onHashChange
+      );
+
+      this.isListening = false;
+    }
+
+    return this;
+  }
+
+  /**
+   * Navigate router to path
+   * @param {string} path - Path to navigate the router to
+   * @returns {Router} - This router instance
+   */
+  navigate(path) {
+    if (this.options.debug) {
+      log(`Redirecting to: /${Router.cleanPath(path || '')}`);
+    }
+
+    this.options.context.history.pushState(
+      null,
+      null,
+      '#/' + Router.cleanPath(path || '')
+    );
+
+    if (path !== 'error') {
+      window.dispatchEvent(new CustomEvent('hashchange'));
+    }
+
+    return this;
+  }
+
+  /**
+   * Navigate to the error page
+   * @param {string} hash
+   * @returns {Router} - This router instance
+   */
+  navigateError(hash) {
+    if (this.options.debug) {
+      log(`Fetching: /${hash}, not a valid route.`);
+    }
+
+    this.navigate('error');
+
+    return this;
+  }
+
+  /**
+   * Name of the current route
+   * @returns {string} - Current route
+   */
+  get currentRoute() {
+    return Router.cleanPath(this.options.context.location.hash);
+  }
+
+  /**
+   * Strip the path of slashes and hashes
+   * @param {string} path - Path to clean of hashes
+   * @returns {string} - Cleaned path
+   */
+  static cleanPath(path) {
+    if (!path) {
+      return '';
+    }
+
+    return String(path).replace(/^[#\/]+|\/+$|\?.*$/g, '');
+  }
+
+  /**
+   * Parse a route URL to get all parts
+   * @param {string} path - Route to split into parts
+   * @returns {string[]} - Parts of the URL
+   */
+  static parseRoute(path) {
+    return Router.cleanPath(path).split('/');
+  }
+}
+
+
+/***/ }),
+
 /***/ "./node_modules/hyperhtml/esm/classes/Component.js":
 /*!*********************************************************!*\
   !*** ./node_modules/hyperhtml/esm/classes/Component.js ***!
@@ -12570,17 +12867,22 @@ module.exports = g;
 
 var createComponents = function () {
     var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-        var mainBlock, el;
+        var mainBlock, router, el;
         return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
                 switch (_context.prev = _context.next) {
                     case 0:
                         mainBlock = (0, _hyperhtml2.default)(_templateObject3, getImagesForCategory('salon'));
+                        router = new _es6Router2.default().add(function () {
+                            mainBlock = (0, _hyperhtml2.default)(_templateObject4, getImagesForCategory('salon'));
+                        }).add('balkon', function () {
+                            mainBlock = (0, _hyperhtml2.default)(_templateObject4, getImagesForCategory('balkon'));
+                        });
                         el = document.querySelector('#container');
 
-                        _hyperhtml2.default.bind(el)(_templateObject4, getTopMenu(), mainBlock);
+                        _hyperhtml2.default.bind(el)(_templateObject5, getTopMenu(), mainBlock);
 
-                    case 3:
+                    case 4:
                     case 'end':
                         return _context.stop();
                 }
@@ -12595,12 +12897,17 @@ var createComponents = function () {
 
 var _templateObject = _taggedTemplateLiteral(['<div class="top-menu">\n        <div class="logo">\n            <span class="big">My White</span>\n            <span>Projektowanie wn\u0119trz</span>\n        </div>\n        <nav role="navigation">\n            <div id="menuToggle">\n                <input type="checkbox"/>\n                <span></span>\n                <span></span>\n                <span></span>\n                <div id="menu">\n                    <a href="#">Salon</a>\n                    <a href="#">Gabinet</a>\n                    <a href="#">Kuchnia</a>\n                    <a href="#">\u0141azienka</a>\n                    <a href="#">Pok\xF3j nastolatka</a>\n                    <a href="#">Balkon</a>\n                    <a href="#">O mnie / Kontakt</a>\n                </div>\n            </div>\n        </nav>\n    </div>\n    '], ['<div class="top-menu">\n        <div class="logo">\n            <span class="big">My White</span>\n            <span>Projektowanie wn\u0119trz</span>\n        </div>\n        <nav role="navigation">\n            <div id="menuToggle">\n                <input type="checkbox"/>\n                <span></span>\n                <span></span>\n                <span></span>\n                <div id="menu">\n                    <a href="#">Salon</a>\n                    <a href="#">Gabinet</a>\n                    <a href="#">Kuchnia</a>\n                    <a href="#">\u0141azienka</a>\n                    <a href="#">Pok\xF3j nastolatka</a>\n                    <a href="#">Balkon</a>\n                    <a href="#">O mnie / Kontakt</a>\n                </div>\n            </div>\n        </nav>\n    </div>\n    ']),
     _templateObject2 = _taggedTemplateLiteral(['<img src=', ' alt=', '>'], ['<img src=', ' alt=', '>']),
-    _templateObject3 = _taggedTemplateLiteral(['\n    <div class="main-block">\n\t\t\t', '\n    </div>\n    '], ['\n    <div class="main-block">\n\t\t\t', '\n    </div>\n    ']),
-    _templateObject4 = _taggedTemplateLiteral(['\n        ', '\n        ', '\n    '], ['\n        ', '\n        ', '\n    ']);
+    _templateObject3 = _taggedTemplateLiteral(['\n\t<div class="main-block">\n\t\t', '\n\t</div>'], ['\n\t<div class="main-block">\n\t\t', '\n\t</div>']),
+    _templateObject4 = _taggedTemplateLiteral(['\n\t\t\t<div class="main-block">\n\t\t\t\t', '\n\t\t\t</div>'], ['\n\t\t\t<div class="main-block">\n\t\t\t\t', '\n\t\t\t</div>']),
+    _templateObject5 = _taggedTemplateLiteral(['\n\t\t\t', '\n\t\t\t', '\n\t'], ['\n\t\t\t', '\n\t\t\t', '\n\t']);
 
 var _hyperhtml = __webpack_require__(/*! hyperhtml */ "./node_modules/hyperhtml/esm/index.js");
 
 var _hyperhtml2 = _interopRequireDefault(_hyperhtml);
+
+var _es6Router = __webpack_require__(/*! es6-router */ "./node_modules/es6-router/lib/index.js");
+
+var _es6Router2 = _interopRequireDefault(_es6Router);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -12646,18 +12953,6 @@ function getImagesForCategory(category) {
 }
 
 createComponents();
-
-// bind(document.querySelector('ul'))`${
-//   // fill it up with wired items
-//   listOfItems.map(
-//     // any object can be wired
-//     // to a declarative content
-//     item =>
-//     // this will return, per each item
-//     // an actual <LI> DOM node
-//     wire(item)`<li>${item.name}</li>`
-//   )
-// }`;
 
 /***/ }),
 

@@ -1,4 +1,5 @@
 import hyper from 'hyperhtml';
+import Router from 'es6-router';
 
 let categoriesRegistry = {
     'salon': 3,
@@ -22,13 +23,13 @@ function getTopMenu() {
                 <span></span>
                 <span></span>
                 <div id="menu">
-                    <a href="#">Salon</a>
-                    <a href="#">Gabinet</a>
-                    <a href="#">Kuchnia</a>
-                    <a href="#">Łazienka</a>
-                    <a href="#">Pokój nastolatka</a>
-                    <a href="#">Balkon</a>
-                    <a href="#">O mnie / Kontakt</a>
+                    <a href="#/salon">Salon</a>
+                    <a href="#/gabinet">Gabinet</a>
+                    <a href="#/kuchnia">Kuchnia</a>
+                    <a href="#/lazienka">Łazienka</a>
+                    <a href="#/nastolatka">Pokój nastolatka</a>
+                    <a href="#/balkon">Balkon</a>
+                    <a href="#/o-mnie">O mnie / Kontakt</a>
                 </div>
             </div>
         </nav>
@@ -59,29 +60,66 @@ function getImagesForCategory(category) {
         return finalHtml;
     }
 }
+
+const el = document.querySelector('#container');
+
+function renderHyper(block) {
+	hyper.bind(el)`
+			${getTopMenu()}
+			${block}
+	`;
+}
 async function createComponents() {
-    let mainBlock = hyper`
-    <div class="main-block">
-			${getImagesForCategory('salon')}
-    </div>
-    `;
-    const el = document.querySelector('#container');
-    hyper.bind(el)`
-        ${getTopMenu()}
-        ${mainBlock}
-    `;
+	let router = new Router()
+		.add('', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('salon')}
+			</div>`);
+		})
+		.add('salon', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('salon')}
+			</div>`);
+		})
+		.add('gabinet', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('gabinet')}
+			</div>`);
+		})
+		.add('kuchnia', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('kuchnia')}
+			</div>`);
+		})
+		.add('lazienka', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('lazienka')}
+			</div>`);
+		})
+		.add('nastolatka', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('nastolatka')}
+			</div>`);
+		})
+		.add('balkon', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+				${getImagesForCategory('balkon')}
+			</div>`);
+		})
+		.add('o-mnie', () => {
+			renderHyper(hyper`
+			<div class="main-block">
+			<img src="assets/o-mnie.jpg" alt="Marlena Michalska - projektowanie wnętrz">
+			<p>Coś o mnie :)</p>
+			</div>`);
+		});
+	router.navigate('');
 }
 createComponents();
-
-	
-// bind(document.querySelector('ul'))`${
-//   // fill it up with wired items
-//   listOfItems.map(
-//     // any object can be wired
-//     // to a declarative content
-//     item =>
-//     // this will return, per each item
-//     // an actual <LI> DOM node
-//     wire(item)`<li>${item.name}</li>`
-//   )
-// }`;

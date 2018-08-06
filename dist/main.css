@@ -81,6 +81,10 @@ a {
         margin-top: 15px;
         margin-right: 8px;
     }
+    .main-block p {
+        display: inline-block;
+        font-size: 18px;
+    }
     .main-block img:first-child {
         margin-left: 15px;
     }
