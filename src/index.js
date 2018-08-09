@@ -12,10 +12,7 @@ let categoriesRegistry = {
 
 function getTopMenu() {
     return hyper`<div class="top-menu">
-        <div class="logo">
-            <span class="big">My White</span>
-            <span>Projektowanie wnętrz</span>
-        </div>
+        <img class="logo" src="assets/super-logo.svg" alt="Frog"/>
         <nav role="navigation">
             <div id="menuToggle">
                 <input type="checkbox"/>
@@ -29,7 +26,7 @@ function getTopMenu() {
                     <a href="#/lazienka">Łazienka</a>
                     <a href="#/nastolatka">Pokój nastolatka</a>
                     <a href="#/balkon">Balkon</a>
-                    <a href="#/o-mnie">O mnie / Kontakt</a>
+                    <a href="#/o-mnie">O mnie</a>
                 </div>
             </div>
         </nav>
@@ -61,12 +58,23 @@ function getImagesForCategory(category) {
     }
 }
 
+function getFooter() {
+  return hyper`
+    <div class="footer">
+      <span class="phone">TELEFON: +48 501 388 069</span>
+      <span class="email">EMAIL: marlenamichalska@gmail.com</span>
+      <a href="https://www.instagram.com/my.white/">@MY.WHITE</a>
+    </div>
+  `
+}
+
 const el = document.querySelector('#container');
 
 function renderHyper(block) {
 	hyper.bind(el)`
 			${getTopMenu()}
 			${block}
+      ${getFooter()}
 	`;
 }
 async function createComponents() {
