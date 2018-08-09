@@ -105,6 +105,9 @@ a {
         overflow-y: scroll;
         overflow-x: hidden;
     }
+    .footer {
+      display: none;
+    }
     .logo {
       width: 250px;
       padding-top: 10px;
